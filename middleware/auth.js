@@ -8,7 +8,7 @@ module.exports = function(req, res, next){
 
     //cek kalo token salah
     if(!token){
-        return res.status(401).json({ msg: "isi token gays"})
+        return res.status(401).json({ msg: "isi token guys"})
     }
     try {
         const decoded =  jwt.verify(token, config.get('jwtsecret'))

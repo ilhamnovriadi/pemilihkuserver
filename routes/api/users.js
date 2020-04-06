@@ -6,6 +6,8 @@ const { check, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 
+const validateLoginInput = require('../../validation/login');
+
 const User = require("../../models/Users");
 
 // Route    POST api/users
@@ -82,5 +84,55 @@ router.post(
     }
   }
 );
+
+router.post('/login', (req, res) => {
+  const { errors, isValid } = validateLoginInput(req.body);
+
+  // Check Validation
+  if (!isValid) {
+    errors.success = "gagal";
+    return res.status(400).json(errors);
+  }
+
+  const email = req.body.email;
+  const password = req.body.password;
+
+  // Find user by email
+  User.findOne({ email }).then(user => {
+    // Check for user
+    if (!user) {
+      errors.email = 'User not found';
+      errors.success = "gagal"
+      return res.status(404).json(errors);
+    }
+
+    // Check Password
+    bcrypt.compare(password, user.password).then(isMatch => {
+      if (isMatch) {
+        // User Matched
+        const payload = { user: {
+          id: user.id
+        } }; // Create JWT Payload
+
+        // Sign Token
+        jwt.sign(
+          payload,
+          config.get("jwtsecret"),
+          { expiresIn: 360000 },
+          (err, token) => {
+            res.json({
+              success: true,
+              token: token
+            });
+          }
+        );
+      } else {
+        errors.password = 'Password incorrect';
+        errors.success = "gagal";
+        return res.status(400).json(errors);
+      }
+    });
+  });
+});
 
 module.exports = router;
